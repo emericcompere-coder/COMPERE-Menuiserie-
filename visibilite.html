@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan de visibilité — EC Menuiserie</title>
+<style>
+  :root {
+    --wood: #8a5a3b;
+    --wood-dark: #5e3d28;
+    --bg: #faf6f1;
+    --card: #ffffff;
+    --text: #2b2320;
+    --muted: #8a7f76;
+    --done: #4a7c59;
+    --border: #e6ddd3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 1.3rem;
+    margin: 0 0 4px 0;
+    color: var(--wood-dark);
+  }
+  .header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  .progress-wrap {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+    color: var(--muted);
+  }
+  .progress-bar-bg {
+    background: var(--border);
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    background: var(--wood);
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+  .phase {
+    margin-bottom: 18px;
+  }
+  .phase-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--wood-dark);
+    margin: 0 0 10px 4px;
+  }
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+  .checkbox {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid var(--wood);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    transition: all 0.15s ease;
+  }
+  .checkbox.checked {
+    background: var(--done);
+    border-color: var(--done);
+  }
+  .checkbox svg {
+    width: 14px;
+    height: 14px;
+    display: none;
+  }
+  .checkbox.checked svg { display: block; }
+  .step-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    flex: 1;
+  }
+  .step.checked .step-title {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+  .expand-arrow {
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-top: 4px;
+    transition: transform 0.15s ease;
+  }
+  .expand-arrow.open { transform: rotate(90deg); }
+  .step-detail {
+    display: none;
+    padding: 0 14px 14px 48px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .step-detail.open { display: block; }
+  .step-detail ol, .step-detail ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .step-detail li { margin-bottom: 6px; }
+  .step-detail pre {
+    background: #f3ede4;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    white-space: pre-wrap;
+    font-family: inherit;
+    font-size: 0.85rem;
+    margin: 8px 0;
+  }
+  .copy-btn {
+    background: var(--wood);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .copy-btn:active { opacity: 0.7; }
+  .reset-btn {
+    display: block;
+    margin: 24px auto 8px auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+  }
+  .status {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+    min-height: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🪵 Plan de visibilité en ligne</h1>
+  <p>EC Menuiserie — coche chaque étape au fur et à mesure</p>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-label">
+    <span id="progress-text">0 / 0 étapes</span>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<button class="reset-btn" id="reset-btn">Réinitialiser toute la progression</button>
+<div class="status" id="status"></div>
+
+<script>
+const DATA = [
+  {
+    phase: "PHASE 1 — Créer et vérifier les comptes",
+    steps: [
+      {
+        id: "s1",
+        title: "Étape 1 — Google Business Profile",
+        html: `<ol>
+          <li>Va sur google.com/business</li>
+          <li>Connecte-toi avec ton compte Google</li>
+          <li>Cherche "EC Menuiserie" dans la barre de recherche du site</li>
+          <li>Si une fiche existe déjà : clique sur "Revendiquer cette fiche"</li>
+          <li>Sinon : clique sur "Ajouter votre établissement sur Google"</li>
+          <li>Renseigne : Nom (EC Menuiserie), catégorie principale (Menuisier), catégories secondaires (Service de rénovation, Restauration de meubles)</li>
+          <li>Zone de service : coche "Je livre des biens et services à mes clients", indique Saint-Maximin-la-Sainte-Baume + rayon 30 km</li>
+          <li>Ne coche pas "adresse visible" si pas de boutique</li>
+          <li>Ajoute téléphone et site web si tu en as un</li>
+          <li>Valide la fiche (code reçu par carte postale, SMS ou appel)</li>
+        </ol>`
+      },
+      {
+        id: "s2",
+        title: "Étape 2 — Facebook",
+        html: `<ol>
+          <li>Va sur facebook.com, menu (9 points) puis "Pages"</li>
+          <li>Clique sur "Créer une nouvelle Page" (si elle n'existe pas déjà)</li>
+          <li>Nom : EC Menuiserie — Catégorie : Menuisier</li>
+          <li>Ajoute une bio courte, une photo de profil (logo) et une photo de couverture (avant/après)</li>
+          <li>Dans "Paramètres" > "Informations sur la Page" : adresse (zone d'intervention), téléphone, horaires</li>
+          <li>Active le bouton d'action "Nous contacter" ou "Envoyer un message"</li>
+        </ol>`
+      },
+      {
+        id: "s3",
+        title: "Étape 3 — Instagram",
+        html: `<ol>
+          <li>Ouvre l'application Instagram</li>
+          <li>Paramètres > Compte > "Passer à un compte professionnel"</li>
+          <li>Catégorie : Entreprise locale > Menuisier</li>
+          <li>Renseigne la bio (voir texte à l'étape 7)</li>
+          <li>Ajoute téléphone et e-mail professionnels</li>
+          <li>Ajoute la même photo de profil que Facebook</li>
+        </ol>`
+      },
+      {
+        id: "s4",
+        title: "Étape 4 — Relier Facebook et Instagram (Meta Business Suite)",
+        html: `<ol>
+          <li>Va sur business.facebook.com et connecte-toi</li>
+          <li>"Paramètres de l'entreprise" > "Comptes" > "Comptes Instagram"</li>
+          <li>Clique "Ajouter" et connecte ton compte Instagram pro</li>
+          <li>Onglet "Publications" : crée un brouillon test et vérifie que Facebook + Instagram sont cochés avant de publier</li>
+        </ol>`
+      },
+      {
+        id: "s5",
+        title: "Étape 5 — Pages Jaunes (fiche gratuite)",
+        html: `<ol>
+          <li>Va sur solocalmanager.fr</li>
+          <li>"Revendiquer mon établissement" ou "Créer mon compte"</li>
+          <li>Cherche "EC Menuiserie" ou ton nom + Saint-Maximin</li>
+          <li>Si la fiche existe : "C'est mon établissement" puis vérification par SMS/téléphone</li>
+          <li>Sinon : crée-la avec les mêmes infos que Google (nom, adresse, téléphone identiques)</li>
+          <li>Remplis catégorie, zone d'intervention, horaires, description</li>
+          <li>Ignore les propositions d'abonnement payant pendant l'inscription</li>
+        </ol>`
+      },
+      {
+        id: "s6",
+        title: "Étape 6 — Vérification de cohérence",
+        html: `<ol>
+          <li>Ouvre les 4 fiches côte à côte (Google, Facebook, Instagram, Pages Jaunes)</li>
+          <li>Vérifie que le nom de l'entreprise est identique partout</li>
+          <li>Vérifie que le téléphone est écrit dans le même format partout</li>
+          <li>Vérifie que la zone géographique indiquée est la même partout</li>
+        </ol>`
+      }
+    ]
+  },
+  {
+    phase: "PHASE 2 — Optimisation du contenu",
+    steps: [
+      {
+        id: "s7",
+        title: "Étape 7 — Coller les textes sur chaque plateforme",
+        html: `
+          <p><strong>Google Business Profile — Description :</strong></p>
+          <pre id="txt1">Menuisier indépendant à Saint-Maximin-la-Sainte-Baume, spécialiste de la rénovation et de l'entretien du bois. Je redonne vie à vos volets, terrasses, portes et meubles en bois abîmés, sans le coût du neuf. Ponçage, dégrisage, vitrification, réparation, remplacement de pièces défectueuses. Mon approche : un diagnostic honnête, une solution durable, un prix maîtrisé. J'interviens aussi sur les fermetures (portes, volets, portes blindées) et l'aménagement intérieur sur mesure. Intervention à Saint-Maximin et dans tout le Var. Devis gratuit sous 48h.</pre>
+          <button class="copy-btn" data-copy="txt1">Copier ce texte</button>
+
+          <p><strong>Facebook — À propos :</strong></p>
+          <pre id="txt2">Menuisier indépendant basé à Saint-Maximin-la-Sainte-Baume.
+Spécialiste rénovation et entretien du bois : terrasses, volets, portes, meubles.
+Redonnez vie à vos bois, sans le prix du neuf.
+Intervention dans tout le Var. Devis gratuit.</pre>
+          <button class="copy-btn" data-copy="txt2">Copier ce texte</button>
+
+          <p><strong>Instagram — Bio :</strong></p>
+          <pre id="txt3">🔨 Menuisier | Saint-Maximin (83)
+🪵 Spécialiste rénovation &amp; entretien du bois
+♻️ Redonner vie à vos bois, sans le prix du neuf
+👇 Devis gratuit</pre>
+          <button class="copy-btn" data-copy="txt3">Copier ce texte</button>
+
+          <p><strong>Pages Jaunes — Description :</strong></p>
+          <pre id="txt4">Menuisier spécialisé dans la rénovation et l'entretien du bois à Saint-Maximin-la-Sainte-Baume. Ponçage, traitement, vitrification et réparation de terrasses, volets, portes et meubles en bois. Solution durable et économique face au remplacement à neuf. Intervention également possible sur les fermetures et l'aménagement intérieur. Zone d'intervention : Saint-Maximin et le Var. Devis gratuit et rapide.</pre>
+          <button class="copy-btn" data-copy="txt4">Copier ce texte</button>
+        `
+      },
+      {
+        id: "s8",
+        title: "Étape 8 — Photos",
+        html: `<ol>
+          <li>Choisis 10 photos existantes de tes chantiers (avant/après si possible)</li>
+          <li>Si besoin, prends systématiquement une photo avant et une après sur ton prochain chantier</li>
+          <li>Google Business Profile : onglet "Photos" > "Ajouter des photos" > catégorie "Travaux réalisés"</li>
+          <li>Pages Jaunes : onglet "Photos", mêmes visuels</li>
+          <li>Poste les 3 meilleures sur Instagram/Facebook via Meta Business Suite, espacées de quelques jours</li>
+        </ol>`
+      },
+      {
+        id: "s9",
+        title: "Étape 9 — Premiers avis clients",
+        html: `<ol>
+          <li>Fais la liste de tes 5 derniers clients satisfaits</li>
+          <li>Google Business Profile > "Demander des avis" > copie le lien</li>
+          <li>Envoie le lien par SMS à chaque client avec un message simple</li>
+          <li>Fais pareil pour Pages Jaunes (bouton "Demander un avis" dans Solocal Manager)</li>
+        </ol>`
+      },
+      {
+        id: "s10",
+        title: "Étape 10 — Routine hebdomadaire",
+        html: `<ol>
+          <li>Choisis un jour fixe dans la semaine pour préparer la publication</li>
+          <li>Prends une photo pendant un chantier de la semaine</li>
+          <li>Publie-la via Meta Business Suite (Facebook + Instagram en même temps)</li>
+          <li>Une fois par mois, vérifie les statistiques Google Business Profile (onglet "Performances")</li>
+        </ol>`
+      }
+    ]
+  }
+];
+
+const STORAGE_KEY = 'ec-menuiserie-checklist-progress';
+let progress = {};
+
+function totalSteps() {
+  return DATA.reduce((acc, p) => acc + p.steps.length, 0);
+}
+
+function updateProgress() {
+  const total = totalSteps();
+  const done = Object.values(progress).filter(Boolean).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progress-text').textContent = `${done} / ${total} étapes`;
+  document.getElementById('progress-pct').textContent = `${pct}%`;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  } catch (e) {
+    console.error('Erreur de sauvegarde', e);
+    showStatus("Sauvegarde impossible sur cet appareil.");
+  }
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      progress = JSON.parse(raw);
+    }
+  } catch (e) {
+    progress = {};
+  }
+}
+
+function showStatus(msg) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = ''; }, 1500);
+}
+
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  DATA.forEach(phase => {
+    const phaseDiv = document.createElement('div');
+    phaseDiv.className = 'phase';
+    const title = document.createElement('div');
+    title.className = 'phase-title';
+    title.textContent = phase.phase;
+    phaseDiv.appendChild(title);
+
+    phase.steps.forEach(step => {
+      const stepDiv = document.createElement('div');
+      stepDiv.className = 'step' + (progress[step.id] ? ' checked' : '');
+      stepDiv.id = 'step-' + step.id;
+
+      const header = document.createElement('div');
+      header.className = 'step-header';
+
+      const checkbox = document.createElement('div');
+      checkbox.className = 'checkbox' + (progress[step.id] ? ' checked' : '');
+      checkbox.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+      checkbox.onclick = (e) => {
+        e.stopPropagation();
+        progress[step.id] = !progress[step.id];
+        saveProgress();
+        updateProgress();
+        render();
+      };
+
+      const titleSpan = document.createElement('div');
+      titleSpan.className = 'step-title';
+      titleSpan.textContent = step.title;
+
+      const arrow = document.createElement('div');
+      arrow.className = 'expand-arrow';
+      arrow.textContent = '▶';
+
+      header.appendChild(checkbox);
+      header.appendChild(titleSpan);
+      header.appendChild(arrow);
+
+      const detail = document.createElement('div');
+      detail.className = 'step-detail';
+      detail.innerHTML = step.html;
+
+      header.onclick = () => {
+        detail.classList.toggle('open');
+        arrow.classList.toggle('open');
+      };
+
+      stepDiv.appendChild(header);
+      stepDiv.appendChild(detail);
+      phaseDiv.appendChild(stepDiv);
+    });
+
+    app.appendChild(phaseDiv);
+  });
+
+  // wire copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const targetId = btn.getAttribute('data-copy');
+      const text = document.getElementById(targetId).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showStatus('Texte copié !');
+      }).catch(() => {
+        showStatus('Copie impossible sur cet appareil.');
+      });
+    };
+  });
+
+  updateProgress();
+}
+
+document.getElementById('reset-btn').onclick = () => {
+  progress = {};
+  saveProgress();
+  render();
+  showStatus('Progression réinitialisée.');
+};
+
+loadProgress();
+render();
+</script>
+
+</body>
+</html>
